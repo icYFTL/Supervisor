@@ -17,6 +17,7 @@ async def on_punish(ctx: message):
     if not permit:
         if ctx.author not in violators:
             await ctx.send('Who aRe yOu? Anyway, one more time you\'ll try to punish somebody - I\'ll punish y0u!')
+            violators.append(ctx.author)
         else:
             await ctx.send('I will play with y0ur a$$!')
             await jail([ctx.author], ctx, 1)
