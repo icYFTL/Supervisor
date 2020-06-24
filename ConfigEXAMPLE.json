@@ -1,0 +1,8 @@
+{
+  "token": "XXX",
+  "permitted_roles": [
+    "GOD",
+    "Moderator"
+  ],
+  "prisoner_role_name": "Prisoner"
+}
