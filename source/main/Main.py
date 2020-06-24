@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 
 @bot.command('punish')
-async def on_punish(ctx: message):
+async def on_punish(ctx: message) -> None:
     permit: bool = False
     # Check sender's permissions
     for _permitted in config.get('permitted_roles', {}):
@@ -32,6 +32,10 @@ async def on_punish(ctx: message):
                     permit = False
     if not permit:
         await ctx.send('He is too big for you')
+        return
+
+    if len(ctx.message.content.split()) < 2:
+        await ctx.send('What the fuck is this?')
         return
 
     delay: int = 1
@@ -62,6 +66,6 @@ async def jail(members: list, ctx: message, delay: int) -> None:
             [x for x in bot.get_guild(ctx.message.guild.id).roles if
              x.name == config.get('prisoner_role_name', '')][0])
 
-        await _member.move_to(utils.get(ctx.message.guild.channels, name='ТЮРЬМА'))
+        await _member.move_to(utils.get(ctx.message.guild.channels, name=config['prison_channel_name']))
 
     await ctx.send(f'Welcome to the club: {", ".join([x.name for x in members])} for {delay} minutes')
