@@ -4,6 +4,7 @@ import hues
 
 punished = list()
 violators = list()
+dominant = None
 
 config = json.loads(open('Config.json', 'r').read() or {})
 

@@ -1,11 +1,11 @@
-from Core import config, bot, hues, punished, violators
+from Core import *
 from discord import message, utils
 from copy import copy
 from datetime import datetime, timedelta
+from source.handlers.JailEngine import JailEngine
 
 
-@bot.command('punish')
-async def on_punish(ctx: message) -> None:
+async def checks(ctx: message, members: list) -> bool:
     permit: bool = False
     # Check sender's permissions
     for _permitted in config.get('permitted_roles', {}):
@@ -21,10 +21,9 @@ async def on_punish(ctx: message) -> None:
         else:
             await ctx.send('I will play with y0ur a$$!')
             await jail([ctx.author], ctx, 1)
-        return
+        return False
 
     # Check punished members's roles
-    members = [utils.get(ctx.message.guild.members, id=x.id) for x in ctx.message.mentions]
     for _permitted in config.get('permitted_roles', {}):
         for _member in members:
             for _role in _member.roles:
@@ -32,10 +31,20 @@ async def on_punish(ctx: message) -> None:
                     permit = False
     if not permit:
         await ctx.send('He is too big for you')
-        return
+        return False
 
-    if len(ctx.message.content.split()) < 2:
+    if len(ctx.message.content.split()) < 2 or not ctx.message.mentions:
         await ctx.send('What the fuck is this?')
+        return False
+
+    return True
+
+
+@bot.command('punish')
+async def on_punish(ctx: message) -> None:
+    members = [utils.get(ctx.message.guild.members, id=x.id) for x in ctx.message.mentions]
+
+    if not await checks(ctx, members):
         return
 
     delay: int = 1
@@ -69,3 +78,36 @@ async def jail(members: list, ctx: message, delay: int) -> None:
         await _member.move_to(utils.get(ctx.message.guild.channels, name=config['prison_channel_name']))
 
     await ctx.send(f'Welcome to the club: {", ".join([x.name for x in members])} for {delay} minutes')
+
+
+@bot.command('unpunish')
+async def on_unpunish(ctx: message):
+    if not await checks(ctx, ctx.message.mentions):
+        return
+
+    unpunished: bool = False
+
+    for user in ctx.message.mentions:
+        for _p in punished:
+            if _p['member'] == user:
+                await JailEngine.unpunish(_p)
+                await ctx.send('Что ж ты фраер сдал назад?\nGet ready for ass\'s games!')
+                unpunished = True
+
+    if not unpunished:
+        await ctx.send('I can\'t find this tasty ass :(')
+
+# @bot.command('dominant')
+# async def on_dominant(ctx: message) -> None:
+#     from random import shuffle, randint
+#     global dominant
+#
+#     if not dominant:
+#         _members = copy(ctx.guild.members)
+#         shuffle(_members)
+#         dominant = _members[randint(0, len(_members) - 1)]
+#     else:
+#         await ctx.send(f'Until 00:00 gachi bos is {dominant.name}')
+#         return
+#
+#     await ctx.send(f'New gachi bos is {dominant.name}')
