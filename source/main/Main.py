@@ -19,8 +19,10 @@ async def checks(ctx: message, members: list) -> bool:
             await ctx.send('Who aRe yOu? Anyway, one more time you\'ll try to punish somebody - I\'ll punish y0u!')
             violators.append(ctx.author)
         else:
-            await ctx.send('I will play with y0ur a$$!')
-            await jail([ctx.author], ctx, 1)
+            await ctx.send('I will play with y0ur a$$, ' + ctx.author.mention)
+            ctx.message.mentions.clear()  # TODO: REFACTOR
+            ctx.message.mentions.append(ctx.author)
+            await jail(ctx, 1)
         return False
 
     # Check punished members's roles
