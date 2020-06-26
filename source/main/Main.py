@@ -42,7 +42,7 @@ async def checks(ctx: message, members: list) -> bool:
 
 @bot.command('punish')
 async def on_punish(ctx: message) -> None:
-    members = [utils.get(ctx.message.guild.members, id=x.id) for x in ctx.message.mentions]
+    members = ctx.message.mentions
 
     if not await checks(ctx, members):
         return
@@ -58,26 +58,30 @@ async def on_punish(ctx: message) -> None:
         await ctx.send('So LoNg period.')
         return
 
-    await jail(members, ctx, delay)
+    if delay < 1:
+        await ctx.send('You\'re bad b0y!')
+        return
+
+    await jail(ctx, delay)
 
 
-async def jail(members: list, ctx: message, delay: int) -> None:
-    for _member in members:
+async def jail(ctx: message, delay: int) -> None:
+    _members = [utils.get(ctx.message.guild.members, id=x.id) for x in ctx.message.mentions]
+    for _member in _members:
         punished.append(
             {'member': _member, 'date_to': datetime.now() + timedelta(minutes=delay), 'roles': copy(_member.roles),
              'guild_id': ctx.message.guild.id})
-
-        for _role in _member.roles:
-            if _role.name != '@everyone':
-                await _member.remove_roles(_role)
-
+        await _member.remove_roles(*_member.roles[1:])
         await _member.add_roles(
             [x for x in bot.get_guild(ctx.message.guild.id).roles if
              x.name == config.get('prisoner_role_name', '')][0])
 
-        await _member.move_to(utils.get(ctx.message.guild.channels, name=config['prison_channel_name']))
+        try:
+            await _member.move_to(utils.get(ctx.message.guild.channels, name=config['prison_channel_name']))
+        except:
+            pass
 
-    await ctx.send(f'Welcome to the club: {", ".join([x.name for x in members])} for {delay} minutes')
+    await ctx.send(f'Welcome to the club, {", ".join([x.mention for x in ctx.message.mentions])} for {delay} minutes')
 
 
 @bot.command('unpunish')
@@ -91,11 +95,14 @@ async def on_unpunish(ctx: message):
         for _p in punished:
             if _p['member'] == user:
                 await JailEngine.unpunish(_p)
-                await ctx.send('Что ж ты фраер сдал назад?\nGet ready for ass\'s games!')
+                punished.remove(_p)
                 unpunished = True
 
     if not unpunished:
         await ctx.send('I can\'t find this tasty ass :(')
+    else:
+        await ctx.send(
+            'I remembered your sweety asses. See you again, ' + ','.join([x.mention for x in ctx.message.mentions]))
 
 # @bot.command('dominant')
 # async def on_dominant(ctx: message) -> None:

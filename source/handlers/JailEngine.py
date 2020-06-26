@@ -13,8 +13,8 @@ class JailEngine(object):
             if punished:
                 for _p in punished:
                     if _p['date_to'] <= datetime.now():
-                        JailEngine.unpunish(_p)
-
+                        asyncio.run_coroutine_threadsafe(JailEngine.unpunish(_p), loop)
+                        punished.remove(_p)
             if update_time + timedelta(minutes=15) <= datetime.now():
                 violators.clear()
                 update_time = datetime.now()
@@ -22,10 +22,11 @@ class JailEngine(object):
 
     @staticmethod
     async def unpunish(user):
-        [asyncio.run_coroutine_threadsafe(user['member'].add_roles(x), loop) for x in user['roles']]
-        asyncio.run_coroutine_threadsafe(user['member'].remove_roles(
+        if user['roles'] and (len(user['roles']) and user['roles'][0].name != config.get('prisoner_role_name')):
+            await user['member'].add_roles(*user['roles'][1:])
+        await user['member'].remove_roles(
             [x for x in bot.get_guild(user['guild_id']).roles if
-             x.name == config.get('prisoner_role_name', '')][0]), loop)
+             x.name == config.get('prisoner_role_name', '')][0])
 
     def start(self):
         hues.warn('JailEngine is being started')
