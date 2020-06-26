@@ -1,5 +1,5 @@
 from Core import *
-from discord import message, utils
+from discord import message, utils, Member
 from copy import copy
 from datetime import datetime, timedelta
 from source.handlers.JailEngine import JailEngine
@@ -16,7 +16,8 @@ async def checks(ctx: message, members: list) -> bool:
 
     if not permit:
         if ctx.author not in violators:
-            await ctx.send('Who aRe yOu? Anyway, one more time you\'ll try to punish somebody - I\'ll punish y0u!')
+            await ctx.send(
+                f'Who aRe yOu, {ctx.author.mention}? Anyway, one more time you\'ll try to punish somebody - I\'ll punish y0u!')
             violators.append(ctx.author)
         else:
             await ctx.send('I will play with y0ur a$$, ' + ctx.author.mention)
@@ -30,9 +31,10 @@ async def checks(ctx: message, members: list) -> bool:
         for _member in members:
             for _role in _member.roles:
                 if _role.name == _permitted:
-                    permit = False
-    if not permit:
-        await ctx.send('He is too big for you')
+                    permit = _member
+
+    if isinstance(permit, Member):
+        await ctx.send(f'{permit.mention} is too big for you, {ctx.author.mention}')
         return False
 
     if len(ctx.message.content.split()) < 2 or not ctx.message.mentions:
@@ -83,7 +85,8 @@ async def jail(ctx: message, delay: int) -> None:
         except:
             pass
 
-    await ctx.send(f'Welcome to the club, {", ".join([x.mention for x in ctx.message.mentions])} for {delay} minutes')
+    await ctx.send(
+        f'Welcome to the club, {", ".join([x.mention for x in ctx.message.mentions])} for {delay} minute{"s" if delay > 1 else ""}')
 
 
 @bot.command('unpunish')
@@ -101,7 +104,7 @@ async def on_unpunish(ctx: message):
                 unpunished = True
 
     if not unpunished:
-        await ctx.send('I can\'t find this tasty ass :(')
+        await ctx.send('I can\'t find this tasty as$ :(')
     else:
         await ctx.send(
             'I remembered your sweety asses. See you again, ' + ','.join([x.mention for x in ctx.message.mentions]))
