@@ -23,6 +23,7 @@ async def checks(ctx: message, members: list) -> bool:
             await ctx.send('I will play with y0ur a$$, ' + ctx.author.mention)
             ctx.message.mentions.clear()  # TODO: REFACTOR
             ctx.message.mentions.append(ctx.author)
+            ctx.message.author = None
             await jail(ctx, 1)
         return False
 
@@ -70,23 +71,52 @@ async def on_punish(ctx: message) -> None:
 
 
 async def jail(ctx: message, delay: int) -> None:
-    _members = [utils.get(ctx.message.guild.members, id=x.id) for x in ctx.message.mentions]
+    _members = [utils.get(ctx.message.guild.members, id=x.id) for x in
+                ctx.message.mentions]  # Get members from mentions
     for _member in _members:
         punished.append(
             {'member': _member, 'date_to': datetime.now() + timedelta(minutes=delay), 'roles': copy(_member.roles),
-             'guild_id': ctx.message.guild.id})
-        await _member.remove_roles(*_member.roles[1:])
-        await _member.add_roles(
+             'guild_id': ctx.message.guild.id})  # Save roles and set imprisonment time
+        await _member.remove_roles(*_member.roles[1:])  # Remove all roles
+        await _member.add_roles(  # Add prisoner's role
             [x for x in bot.get_guild(ctx.message.guild.id).roles if
              x.name == config.get('prisoner_role_name', '')][0])
 
-        try:
+        stat.add_user(_member.id)  # Add user to statistic database
+        stat.increment_imprisonment_counter(_member.id)  # Increment imprisonment counter
+        stat.update_time(_member.id, delay)  # Update total jailed time
+        if ctx.message.author:  # If other user jailed prisoner
+            stat.add_dominus(_member.id, ctx.message.author.id)
+        else:  # If bot jailed prisoner
+            stat.add_dominus(_member.id, bot.user.id)
+
+        try:  # If user not in voice channel at the moment
             await _member.move_to(utils.get(ctx.message.guild.channels, name=config['prison_channel_name']))
         except:
             pass
 
     await ctx.send(
         f'Welcome to the club, {", ".join([x.mention for x in ctx.message.mentions])} for {delay} minute{"s" if delay > 1 else ""}')
+
+
+@bot.command('top')
+async def on_top(ctx: message):
+    from collections import Counter
+    msg_template = '#{iter}. <@{username}>\nImprisonment count: {icounter}\nTotal time in jail: {total_time} minutes\nLoved by: {dominuses}\n\n'
+    users: list = stat.get_sorted_users()
+    if users:
+        for x in users:
+            x.kicked_by = Counter(x.kicked_by)
+        await ctx.send("Here's my favorite boys:\n" + '\n'.join(
+            [msg_template.format(iter=x + 1,
+                                 username=users[x].id,
+                                 icounter=users[x].imprisonment_counter,
+                                 total_time=users[x].total_time,
+                                 dominuses=' '.join(
+                                     [f'<@{str(i)}> x{users[x].kicked_by[i]}' for i in users[x].kicked_by]))
+             for x in range(len(users))]))
+    else:
+        await ctx.send('I don\'t remember no one sweety aS$.')
 
 
 @bot.command('unpunish')
@@ -108,18 +138,3 @@ async def on_unpunish(ctx: message):
     else:
         await ctx.send(
             'I remembered your sweety asses. See you again, ' + ','.join([x.mention for x in ctx.message.mentions]))
-
-# @bot.command('dominant')
-# async def on_dominant(ctx: message) -> None:
-#     from random import shuffle, randint
-#     global dominant
-#
-#     if not dominant:
-#         _members = copy(ctx.guild.members)
-#         shuffle(_members)
-#         dominant = _members[randint(0, len(_members) - 1)]
-#     else:
-#         await ctx.send(f'Until 00:00 gachi bos is {dominant.name}')
-#         return
-#
-#     await ctx.send(f'New gachi bos is {dominant.name}')

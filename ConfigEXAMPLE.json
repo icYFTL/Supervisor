@@ -4,5 +4,6 @@
     "GOD",
     "Moderator"
   ],
-  "prisoner_role_name": "Prisoner"
+  "prisoner_role_name": "Prisoner",
+  "db_name": "supervisor.db"
 }
